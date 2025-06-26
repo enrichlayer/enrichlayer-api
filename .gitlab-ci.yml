@@ -1,0 +1,36 @@
+stages:
+  - lint
+
+cache:
+  paths:
+    - .cache/pip
+    - .venv/
+
+# Lint with Ruff
+lint-ruff:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install poetry
+    - poetry config virtualenvs.in-project true
+    - poetry install --only dev --no-root
+  script:
+    - poetry run ruff check .
+    - poetry run ruff format --check .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == "true"
+
+# Type check with MyPy
+type-check:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install poetry
+    - poetry config virtualenvs.in-project true
+    - poetry install --only dev
+  script:
+    - poetry run mypy enrichlayer_client/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == "true"

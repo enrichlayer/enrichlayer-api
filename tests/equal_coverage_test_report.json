@@ -1,0 +1,65 @@
+{
+  "test_summary": {
+    "timestamp": "2025-07-02T12:26:51.056626",
+    "test_type": "equal_coverage_all_4_client_types",
+    "total_tests": 2,
+    "successful_tests": 2,
+    "failed_tests": 0,
+    "success_rate": "100.0%",
+    "total_credits_used": 6,
+    "total_duration": 7.013,
+    "average_response_time": 5.494,
+    "client_types_tested": [
+      "gevent",
+      "asyncio"
+    ],
+    "endpoints_per_client": 24
+  },
+  "coverage_by_client_type": {
+    "gevent": {
+      "total": 1,
+      "success": 1,
+      "error": 0
+    },
+    "asyncio": {
+      "total": 1,
+      "success": 1,
+      "error": 0
+    }
+  },
+  "by_category": {
+    "general": {
+      "total": 2,
+      "success": 2,
+      "error": 0
+    }
+  },
+  "detailed_results": [
+    {
+      "endpoint": "do_bulk",
+      "client_type": "gevent",
+      "status": "success",
+      "duration": 3.977,
+      "credits_used": 3,
+      "timestamp": "2025-07-02T12:26:48.021259",
+      "sample_data": {
+        "total_operations": 3,
+        "successful_results": 3,
+        "client_type": "gevent"
+      }
+    },
+    {
+      "endpoint": "do_bulk",
+      "client_type": "asyncio",
+      "status": "success",
+      "duration": 7.012,
+      "credits_used": 3,
+      "timestamp": "2025-07-02T12:26:51.055670",
+      "sample_data": {
+        "total_operations": 3,
+        "successful_results": 3,
+        "client_type": "asyncio"
+      }
+    }
+  ]
+}

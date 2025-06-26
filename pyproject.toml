@@ -1,0 +1,122 @@
+[tool.poetry]
+name = "enrichlayer-api"
+version = "0.2.0"
+description = ""
+authors = ["Enrich Layer <support@enrichlayer.com>"]
+packages = [
+    { include = "enrichlayer_client" },
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+gevent = { version = ">=22.10.2,<25.0", optional = true }
+requests = { version = "^2.31.0", optional = true }
+aiohttp = { version = "^3.9.1", optional = true }
+Twisted = { version = "^23.10.0", optional = false }
+treq = { version = "^23.11.0", optional = true }
+
+[tool.poetry.extras]
+gevent = ["gevent", "requests"]
+asyncio = ["aiohttp"]
+twisted = ["Twisted", "treq"]
+
+[tool.poetry.group.dev.dependencies]
+Jinja2 = "^3.1.2"
+
+# Dev tools for linting and testing
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+ruff = "^0.1.7"
+mypy = "^1.7.1"
+types-requests = "^2.32.4.20250611"
+proxycurl-py = "^0.1.0.post2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Exclude template files and generated code
+exclude = [
+    "codegen/",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    "__pycache__",
+    "dist/",
+    "build/",
+    "*.egg-info/",
+]
+
+# Python version target
+target-version = "py39"
+
+# Line length
+line-length = 88
+
+[tool.ruff.lint]
+# Enable specific rule categories
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+]
+
+# Disable specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults
+    "N806",   # Variable in function should be lowercase (conflicts with API responses)
+    "N818",   # Exception name should end with Error (keep existing names for compatibility)
+    "UP007",  # Use X | Y for type unions (keep Optional for Python 3.8 compatibility)
+    "UP036",  # Version block outdated (needed for Python 3.8 compatibility)
+    "RUF013", # PEP 484 prohibits implicit Optional (too strict for existing code)
+    "RUF002", # Docstring unicode issues (in generated files)
+    "SIM117", # Use single with statement (not always more readable)
+    "SIM118", # Use key in dict instead of key in dict.keys()
+    "C408",   # Unnecessary dict() call (sometimes clearer)
+    "C416",   # Unnecessary dict comprehension (sometimes more readable)
+    "B006",   # Mutable default argument (handled case by case)
+    "N805",   # First argument should be self (not always applicable)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can have longer lines and different naming conventions
+"tests/*" = ["E501", "N803", "N806"]
+# Examples can be more flexible
+"examples/*" = ["E501", "N803", "N806"]
+
+[tool.ruff.lint.isort]
+# isort configuration
+known-first-party = ["enrichlayer_client"]
+force-sort-within-sections = true
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Use spaces around = in keyword arguments
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "integration: marks tests as integration tests (may require API key)",
+    "compatibility: marks tests for proxycurl compatibility",
+]

@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔧 GitLab Repository (For Contributing Code)
+    url: https://gitlab.com/enrichlayer/enrichlayer-py
+    about: Submit merge requests and contribute code on our GitLab repository
+  - name: 📚 Documentation
+    url: https://docs.enrichlayer.com
+    about: Check our documentation for API reference and usage examples
+  - name: 💬 Community Discussion
+    url: https://github.com/enrichlayer/enrichlayer-py/discussions
+    about: Ask questions and discuss with the community
+  - name: 📧 EnrichLayer Support
+    url: mailto:support@enrichlayer.com
+    about: For account, billing, or API key issues

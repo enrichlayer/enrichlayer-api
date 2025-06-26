@@ -1,0 +1,32 @@
+name: Close Pull Requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Close Pull Request
+        uses: peter-evans/close-pull@v3
+        with:
+          comment: |
+            Thank you for your contribution! ❤️
+            
+            This GitHub repository is a **read-only mirror** of our GitLab repository. We use GitHub for issue tracking and community engagement, while development happens on GitLab.
+            
+            **To contribute your changes:**
+            
+            1. 🔗 **[Fork our GitLab repository](https://gitlab.com/enrichlayer/enrichlayer-py)**
+            2. 📝 **[Create a Merge Request](https://gitlab.com/enrichlayer/enrichlayer-py/-/merge_requests/new)**
+            3. 👀 Our team will review it there!
+            
+            **Helpful Links:**
+            - 📚 [Contributing Guide](https://gitlab.com/enrichlayer/enrichlayer-py/-/blob/main/CONTRIBUTING.md)
+            - 🐛 [Report Issues](https://github.com/enrichlayer/enrichlayer-py/issues) (we monitor GitHub issues!)
+            - 💬 [Ask Questions](https://github.com/enrichlayer/enrichlayer-py/discussions)
+            
+            We apologize for the extra step and truly appreciate your contribution! 🙏

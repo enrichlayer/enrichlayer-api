@@ -1,0 +1,115 @@
+name: Check Mirror Sync Status
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Enable verbose output'
+        required: false
+        default: 'false'
+
+jobs:
+  check-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub mirror
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Add GitLab remote
+        run: |
+          git remote add gitlab https://gitlab.com/enrichlayer/enrichlayer-py.git || true
+          git fetch gitlab main
+          
+      - name: Check sync status
+        id: sync-check
+        run: |
+          echo "Checking sync status between GitHub and GitLab..."
+          
+          GITHUB_SHA=$(git rev-parse HEAD)
+          GITLAB_SHA=$(git rev-parse gitlab/main)
+          
+          echo "GitHub HEAD: $GITHUB_SHA"
+          echo "GitLab HEAD: $GITLAB_SHA"
+          
+          if [ "$GITHUB_SHA" = "$GITLAB_SHA" ]; then
+            echo "✅ GitHub mirror is in sync with GitLab"
+            echo "status=synced" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ GitHub mirror is OUT OF SYNC with GitLab!"
+            echo "status=out-of-sync" >> $GITHUB_OUTPUT
+            
+            # Show divergence
+            echo ""
+            echo "Commits in GitLab but not in GitHub:"
+            git log --oneline $GITHUB_SHA..gitlab/main || echo "None"
+            
+            echo ""
+            echo "Commits in GitHub but not in GitLab (should be none):"
+            git log --oneline gitlab/main..$GITHUB_SHA || echo "None"
+          fi
+          
+      - name: Create issue if out of sync
+        if: steps.sync-check.outputs.status == 'out-of-sync'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'sync-issue',
+              state: 'open'
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '⚠️ GitHub mirror is out of sync with GitLab',
+                body: `The GitHub mirror has diverged from the GitLab repository.
+                
+This usually means:
+- The GitLab → GitHub mirroring has stopped working
+- Someone pushed directly to GitHub (which should not happen)
+
+**Action Required:**
+1. Check GitLab mirror settings: Settings → Repository → Mirroring repositories
+2. Click "Update now" to force a sync
+3. If that doesn't work, check the mirror configuration
+
+This issue will auto-close when the repositories are back in sync.`,
+                labels: ['sync-issue', 'automated']
+              });
+            }
+            
+      - name: Close sync issue if synced
+        if: steps.sync-check.outputs.status == 'synced'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'sync-issue',
+              state: 'open'
+            });
+            
+            for (const issue of issues.data) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '✅ Repositories are now back in sync!'
+              });
+            }

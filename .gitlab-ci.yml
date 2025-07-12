@@ -1,5 +1,11 @@
 stages:
   - lint
+  - test
+  - push
+
+variables:
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
 
 cache:
   paths:
@@ -34,3 +40,59 @@ type-check:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == "true"
+
+# Test Sync to Github Mirror Repository
+test-sync:
+  stage: test
+  image: python:3-alpine
+  variables:
+    GIT_STRATEGY: clone
+
+  script:
+    - echo "Testing GitHub connection..."
+    - test -n "$GITHUB_DEPLOY_TOKEN" || (echo "ERROR GITHUB_DEPLOY_TOKEN is not set" && exit 1)
+    - apk add --no-cache git
+    - pip3 install --break-system-packages git-filter-repo
+    - git config --global user.email "support@enrichlayer.com"
+    - git config --global user.name "Enrich Layer"
+    - git remote add github https://${GITHUB_DEPLOY_TOKEN}@github.com/enrichlayer/enrichlayer-api.git
+    - git ls-remote github HEAD > /dev/null && echo "GitHub connection successful"
+    - echo "Ready to sync branch ${CI_COMMIT_BRANCH}"
+    - git clone --single-branch --branch ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH} ${CI_REPOSITORY_URL} test-repo
+    - cd test-repo
+    - echo "Testing anonymization on $(git rev-list --count HEAD) commits..."
+    - git filter-repo --dry-run --commit-callback 'commit.author_name = b"Enrich Layer"; commit.author_email = b"support@enrichlayer.com"; commit.committer_name = b"Enrich Layer"; commit.committer_email = b"support@enrichlayer.com"' && echo "Anonymization test passed"
+
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_REF_PROTECTED == "true"
+
+# Push to Github Mirror Repository
+.anonymize-branch:
+  stage: push
+  image: python:3-alpine
+  variables:
+    GIT_STRATEGY: none
+  needs: ["test-sync"]
+  before_script:
+    - apk add --no-cache git
+    - pip3 install --break-system-packages git-filter-repo
+    - git config --global user.email "support@enrichlayer.com"
+    - git config --global user.name "Enrich Layer"
+  script:
+    - echo "Anonymizing branch ${BRANCH_NAME}..."
+    - git clone --single-branch --branch ${BRANCH_NAME} ${CI_REPOSITORY_URL} repo-branch
+    - cd repo-branch
+    - COMMIT_COUNT=$(git rev-list --count HEAD)
+    - echo "Processing $COMMIT_COUNT commits on ${BRANCH_NAME}..."
+    - git filter-repo --force --commit-callback 'commit.author_name = b"Enrich Layer"; commit.author_email = b"support@enrichlayer.com"; commit.committer_name = b"Enrich Layer"; commit.committer_email = b"support@enrichlayer.com"'
+    - git remote add github https://${GITHUB_DEPLOY_TOKEN}@github.com/enrichlayer/enrichlayer-api.git
+    - git push github ${BRANCH_NAME}:${BRANCH_NAME} --force
+    - echo "Successfully pushed ${BRANCH_NAME} with $COMMIT_COUNT anonymized commits"
+
+anonymize-main:
+  extends: .anonymize-branch
+  variables:
+    BRANCH_NAME: main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_REF_PROTECTED == "true"
